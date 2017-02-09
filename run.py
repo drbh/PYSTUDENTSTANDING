@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/Users/drbh/Desktop/PYSTUDENTSTANDING/')
+# sys.path.append('/Users/drbh/Desktop/PYSTUDENTSTANDING/')
 
 import Student as st
 import MatchMachine as mm
@@ -14,7 +14,7 @@ def do_all(EMPLID,ACAD_PLAN,ENROLL_YEAR):
 
     matcher = mm.MatchMachine( st.Student(EMPLID), mj.Major(ACAD_PLAN,ENROLL_YEAR) )
     opt = oz.Optimizer(matcher)
-    result = opt.out
+    result = [opt.out, opt.missed_courses, opt.missed_requirments]
     return result
 
 

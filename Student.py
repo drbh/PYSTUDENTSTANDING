@@ -10,9 +10,23 @@
 print "Loading files for STUDENT"
 
 import pandas as pd
-all_students_meta = pd.read_csv("~/all_students_meta_asupmtst_pre_process.csv", low_memory=False, index_col = 0 )
-student_data_sql = pd.read_csv("~/student_data_sql.csv", low_memory=False)
-all_courses = pd.read_csv("~/all_courses_asupmtst_pre_process.csv", index_col = 0 )
+import pickle
+
+import time
+
+
+start_time = time.time()
+all_students_meta = pd.read_csv('~/all_students_meta_asupmtst_pre_process.csv', low_memory=False, index_col = 0 )
+print "--- ALL STUDENTS METADATA --- %s seconds ---" % (time.time() - start_time) 
+
+start_time_2 = time.time()
+student_data_sql = pd.read_pickle('student_data_sql.pickle')
+print "--- STUDENT SQL --- %s seconds ---" % (time.time() - start_time_2) 
+
+start_time_3 = time.time()
+all_courses = pd.read_pickle('all_courses.pickle')
+print "--- ALL COURSES --- %s seconds ---" % (time.time() - start_time_3) 
+
 
 class Student(object):
     """

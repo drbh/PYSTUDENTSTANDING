@@ -28,7 +28,8 @@ class MatchMachine(object):
         self.general_studies    = self.__general_studies_self()
         self.subject            = self.__subject_self()
         self.exact              = self.__exact_self()
-        self.elective           = self.__elective_self()
+        self.low_elective       = self.__low_elective_self()
+        self.up_elective        = self.__up_elective_self()
 
         # expanded matches
         self.graph              = self.__build_graph()
@@ -70,7 +71,7 @@ class MatchMachine(object):
         matches = np.dot(student_gs_matrix, major_gs_matrix.T)
 
         # Check if the number of matches is equal to the total number of matches
-        row_sums = np.array([1/sum(row) for row in major_gs_matrix])
+        row_sums = np.array([1/sum(row) if sum(row) > 0 else 0 for row in major_gs_matrix])
         final_frame = pd.DataFrame(matches).mul(row_sums, axis=1).fillna(value = 0 )
 
         # Only True if the course general studies match all of the requirments general studies
@@ -82,7 +83,9 @@ class MatchMachine(object):
         """
         Returns all of the matches were the subject is the same
         """
-        major_subject_names = self.major_map.cleaned_major_data['FULL'].str[0:3]
+        # Iterate over each row in the dataframe, check if the requirement type is not C and the name is a string (avoid NAs) and then extract the three letter subject code
+        major_subject_names = pd.Series([ row['FULL'][0:3] if row['REQUIREMENT_TYPE'] != 'C' and isinstance(row['FULL'],str) else np.NAN for idx, row in self.major_map.cleaned_major_data.iterrows()])
+        # Expand these matches over all of the students classes and all of the requirements
         tester = self.student.student_hist['FULL'].str[0:3].apply(lambda sub: sub == major_subject_names )
         return self.__get_reqs(tester)
     
@@ -93,13 +96,39 @@ class MatchMachine(object):
         exact = self.student.student_hist['FULL'].apply(lambda cls: cls == self.major_map.cleaned_major_data['FULL'] )
         return self.__get_reqs(exact)
     
-    def __elective_self(self):
+    def __low_elective_self(self):
         """
         Returns the requirements ids that match the general studies
         """
+        lower_div_electives = pd.Series([ True if row['REQUIREMENT_TYPE'] == 'E' and 'Upper' not in row['SINGLE_OUTPUT_MESSAGE'] else False for idx, row in self.major_map.cleaned_major_data.iterrows()])
+
+        result = list()
+        for iselective in self.student.student_hist['ELEC']:
+            if iselective:
+                row = lower_div_electives
+            else:
+                row = np.repeat(False, len(lower_div_electives) )
+            result.append(row)
+        lower = pd.DataFrame(result)
+
         upper = []
-        lower = []
-        return False
+        return self.__get_reqs(lower)
+
+    def __up_elective_self(self):
+        """
+        Returns the requirements ids that match the general studies
+        """
+        upper_div_electives = pd.Series([ True if row['REQUIREMENT_TYPE'] == 'E' and 'Upper' in row['SINGLE_OUTPUT_MESSAGE'] else False for idx, row in self.major_map.cleaned_major_data.iterrows()])
+
+        result = list()
+        for iselective in self.student.student_hist['ELEC']:
+            if iselective:
+                row = upper_div_electives
+            else:
+                row = np.repeat(False, len(upper_div_electives) )
+            result.append(row)
+        upper = pd.DataFrame(result)
+        return self.__get_reqs(upper)
 
     def __get_reqs(self, match_matrix):
         """
@@ -109,10 +138,19 @@ class MatchMachine(object):
         reduced_matches = np.array([reqids[x].dropna().drop_duplicates().astype('str').str.cat(sep=', ') for x in match_matrix.values])
         return pd.DataFrame(reduced_matches, dtype='str', columns=['REQIDS'])
 
+    def get_reqs(self, match_matrix):
+        """
+        Returns the requirements ids that match the general studies
+        """
+        reqids = self.major_map.cleaned_major_data['REQID']
+        reduced_matches = np.array([reqids[x].dropna().drop_duplicates().astype('str').str.cat(sep=', ') for x in match_matrix.values])
+        return pd.DataFrame(reduced_matches, dtype='str', columns=['REQIDS'])
+
+
     def ___matches(self):
-        all_matches = pd.concat([self.student.student_hist['FULL'].reset_index(drop=True),  self.exact, self.subject, self.general_studies], axis=1)
-        all_matches.columns = ['FULL','EXACT','SUBJECT','GENERAL']
-        all_matches['ALL'] = all_matches['EXACT'] + ', '+ all_matches['SUBJECT'] + ', ' + all_matches['GENERAL'] 
+        all_matches = pd.concat([self.student.student_hist['FULL'].reset_index(drop=True),  self.exact, self.subject, self.general_studies, self.low_elective, self.up_elective], axis=1)
+        all_matches.columns = ['FULL','EXACT','SUBJECT','GENERAL','LOWELECT','UPELECT']
+        all_matches['ALL'] = all_matches['EXACT'] + ', '+ all_matches['SUBJECT'] + ', ' + all_matches['LOWELECT'] + ', ' + all_matches['UPELECT'] + ', ' + all_matches['GENERAL'] 
         return all_matches
 
     def __build_graph(self):

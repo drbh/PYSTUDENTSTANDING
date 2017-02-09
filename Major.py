@@ -11,9 +11,13 @@ print "Loading files for MAJOR"
 
 import pandas as pd
 import re
+import time
 
 major_maps_sql = pd.read_csv("~/major_maps_sql_asupmtst_pre_process.csv", low_memory=False, index_col = 0 )
-all_courses = pd.read_csv("~/all_courses_asupmtst_pre_process.csv", index_col = 0 )
+
+start_time_3 = time.time()
+all_courses = pd.read_pickle('all_courses.pickle')
+print "--- ALL COURSES --- %s seconds ---" % (time.time() - start_time_3) 
 
 
 class Major(object):
@@ -43,6 +47,7 @@ class Major(object):
         mapd = mapd.assign( REQID = REQID )
         mapd = mapd.merge(all_courses,how='left', left_on='FULL', right_on='full')
 
+        mapd = mapd[ mapd['REQUIREMENT_TYPE'].apply(lambda x: x in ['C','G','E'])]
 
         A = mapd[['FULL','MULT_OUTPUT_MESSAGE','REQID','DESCR.y','SINGLE_OUTPUT_MESSAGE','REQUIREMENT_TYPE','full','GS','GS_TYPE1','GS_TYPE2','GS_TYPE3']]
 

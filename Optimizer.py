@@ -28,13 +28,15 @@ class Optimizer(object):
         """
         self.matcher = matcher
 
-        self.dv = self.make_decision_variables()
+        self.dv = list(set(self.make_decision_variables()))
 
         self.objective = np.array([x.count(", ") + 1 for x in self.dv])
         self.constraintix = self.constraint_matrix()
         self.upper_bound = np.repeat(1, len( self.constraintix ))
         self.match_dict = self.make_match_dict()
         self.out = self.output_graph()
+        self.missed_requirments = self.missing_requirments()
+        self.missed_courses = self.missing_courses()
 
     def get_class_use_choices(self, cname):
         results = dict()
@@ -73,19 +75,39 @@ class Optimizer(object):
                 for thing in value:
     #                 print key + ' ' + ', '.join(map(str,list(thing)))
                     nms.append(key)
-                    results.append(classn + ':: ' + key + ':: ' + ', '.join(map(str,list(thing))))
+                    results.append(classn + ' GST ' + ':: ' + key + ':: ' + ', '.join(map(str,list(thing))))
 
             # EXACT MATCHES
             for classn in self.matcher.student.student_hist['FULL']:
                 for i in self.matcher.matches[self.matcher.matches['FULL'] == classn]['EXACT'].values:
                     if len(i) > 0:
-                        results.append(classn + ':: ' + i)
+                        results.append(classn + ' EXT ' + ':: ' + i)
 
-            # SUBJECT MATCHES
-        for classn in self.matcher.student.student_hist['FULL']:
-            for i in self.matcher.matches[self.matcher.matches['FULL'] == classn]['SUBJECT'].values:
-                if len(i) > 0:
-                    results.append(classn + ':: ' + i)
+            # SUBJECT MATCHES 
+            for classn in self.matcher.student.student_hist['FULL']:
+                for i in self.matcher.matches[self.matcher.matches['FULL'] == classn]['SUBJECT'].values:
+                    j = i.split(", ")
+            #         print classn, len(j), len(i), i
+                    if len(i) and len(j) > 0:
+            #             print " GOOD: ", classn, len(j), len(i), i
+                        for match in j:
+                            results.append(classn + ' SUB ' + ':: ' + match)
+
+            # LOWER DIVISION ELECTIVE MATCHES
+            for classn in self.matcher.student.student_hist['FULL']:
+                for i in self.matcher.matches[self.matcher.matches['FULL'] == classn]['LOWELECT'].values:
+                    j = i.split(", ")
+                    if len(i) and len(j) > 0:
+                        for match in j:
+                            results.append(classn + ' ELL ' + ':: ' + match)
+
+            # UPPER DIVISION ELECTIVE MATCHES
+            for classn in self.matcher.student.student_hist['FULL']:
+                for i in self.matcher.matches[self.matcher.matches['FULL'] == classn]['UPELECT'].values:
+                    j = i.split(", ")
+                    if len(i) and len(j) > 0:
+                        for match in j:
+                            results.append(classn + ' ELU ' + ':: ' + match)
 
         return results#, nms
 
@@ -177,10 +199,21 @@ class Optimizer(object):
         result_graph = self.build_result_graph()
         fin = self.expand_results(result_graph)
         percent_complete = (len(fin['REQ'].unique()) + .0) / len(self.matcher.major_map.cleaned_major_data['REQID'].unique())
-        print '\n', percent_complete * 100 , "% complete"
-        return fin
+        # print '\n', percent_complete * 100 , "% complete"
+        return fin, percent_complete
 
 
+    def missing_requirments(self):
+        all_choices = self.matcher.major_map.cleaned_major_data['REQID']
+        choosen = np.array([float(i) for i in self.out[0]['REQ'].unique()])
+        idx = [True if choice not in choosen else False for choice in all_choices]
+        abc = self.matcher.major_map.cleaned_major_data[idx][['REQID','MULT_OUTPUT_MESSAGE','REQUIREMENT_TYPE']].drop_duplicates()
+        result = abc[ abc['REQUIREMENT_TYPE'].apply(lambda x: x in ['C','G','E'])].dropna()
+        return result
 
-
-
+    def missing_courses(self):
+        chooen_classes = self.out[0]['CLS'].apply(lambda row: row[0:-5]).values
+        idx = [classm not in chooen_classes for classm in self.matcher.student.student_hist['FULL'].values]
+        results = self.matcher.student.student_hist[idx][['FULL','DESCR.y']]
+        results.columns = ['FULL','GS']
+        return results
