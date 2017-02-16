@@ -39,20 +39,44 @@ class Major(object):
         if mapd.shape[0] == 0:
             print "NO MAP DATA AVAILABLE"   
             return None
+
+        # combind subject and catalog number for full name
         FULL = mapd['SUBJECT'] + ' ' + mapd['CATALOG_NBR']
+        # get one value for requirment id
         REQID = mapd[['REQUIREMENT_TERM_ID','REQ_MULTIPLE_TERM_ID']].max(axis=1)
+        # check if the row has text in track group
         is_track = mapd.apply(lambda row: len(str(row['TRACK_GROUP'])) > 10, axis=1)
+        # id is track make reqid 0
         REQID[is_track] = 0
+
+        # add columns to frame
         mapd = mapd.assign( FULL = FULL )
         mapd = mapd.assign( REQID = REQID )
+
+
+        # get the pattern for classes
+        regex = re.compile('[A-Z]{3} [0-9]{3}')
+        # find all of the classes that are course specific but dont have a course
+        course_no_explicit = mapd[(mapd['REQUIREMENT_TYPE'] == 'C') & (mapd['FULL'].isnull())]['MULT_OUTPUT_MESSAGE']
+        # find all courses in multi output text
+        or_courses_extracted = [regex.findall(i) for i in course_no_explicit]
+        # hold the index for update
+        indexes = course_no_explicit.index.values
+
+        for i in range(0, len(or_courses_extracted)):
+            expanded_row = pd.concat([mapd.loc[[indexes[i]]]] * len(or_courses_extracted[i]))
+            expanded_row['FULL'] = or_courses_extracted[i]
+            mapd = pd.concat([mapd, expanded_row])
+
+        # join classes by full
         mapd = mapd.merge(all_courses,how='left', left_on='FULL', right_on='full')
-
+        # filter frame by requirments that are courses, general studies and electives
         mapd = mapd[ mapd['REQUIREMENT_TYPE'].apply(lambda x: x in ['C','G','E'])]
-
+        # make new frame with choosen columns
         A = mapd[['FULL','MULT_OUTPUT_MESSAGE','REQID','DESCR.y','SINGLE_OUTPUT_MESSAGE','REQUIREMENT_TYPE','full','GS','GS_TYPE1','GS_TYPE2','GS_TYPE3']]
-
+        # make general studies matrix from frame
         general_sudies_matrix = self.__extract_reqs_from_major_map(mapd)
-
+        # concatenate the matrix and smaller frame
         mapd = pd.concat([A, general_sudies_matrix], axis=1)
 
         return mapd #mapd[['FULL','MULT_OUTPUT_MESSAGE','CATEGORY_DESCR', 'REQID', 'GS', 'GS_TYPE1', 'REQ_LEVEL_ADJ']]

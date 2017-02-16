@@ -78,6 +78,7 @@ class Student(object):
         # Add two new columns FULL name and if ELECTIVE
         student_hist = student_hist.assign( FULL = (student_hist['SUBJECT'] + ' ' + student_hist['CATALOG_NBR']) )
         student_hist = student_hist.assign( ELEC = True )
+        student_hist = student_hist.assign( UPPER = student_hist['CATALOG_NBR'].astype("int") > 300 )
 
         # Merge on the all_coursesn table with general studies matrix
         student_hist = student_hist.merge(all_courses,how='left', left_on='FULL', right_on='full')

@@ -103,8 +103,8 @@ class MatchMachine(object):
         lower_div_electives = pd.Series([ True if row['REQUIREMENT_TYPE'] == 'E' and 'Upper' not in row['SINGLE_OUTPUT_MESSAGE'] else False for idx, row in self.major_map.cleaned_major_data.iterrows()])
 
         result = list()
-        for iselective in self.student.student_hist['ELEC']:
-            if iselective:
+        for iselective in self.student.student_hist['UPPER']:
+            if not iselective:
                 row = lower_div_electives
             else:
                 row = np.repeat(False, len(lower_div_electives) )
@@ -121,7 +121,7 @@ class MatchMachine(object):
         upper_div_electives = pd.Series([ True if row['REQUIREMENT_TYPE'] == 'E' and 'Upper' in row['SINGLE_OUTPUT_MESSAGE'] else False for idx, row in self.major_map.cleaned_major_data.iterrows()])
 
         result = list()
-        for iselective in self.student.student_hist['ELEC']:
+        for iselective in self.student.student_hist['UPPER']:
             if iselective:
                 row = upper_div_electives
             else:

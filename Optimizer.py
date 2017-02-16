@@ -216,4 +216,4 @@ class Optimizer(object):
         idx = [classm not in chooen_classes for classm in self.matcher.student.student_hist['FULL'].values]
         results = self.matcher.student.student_hist[idx][['FULL','DESCR.y']]
         results.columns = ['FULL','GS']
-        return results
+        return results.fillna("None")
