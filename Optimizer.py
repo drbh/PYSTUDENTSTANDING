@@ -198,7 +198,7 @@ class Optimizer(object):
     def output_graph(self):
         result_graph = self.build_result_graph()
         fin = self.expand_results(result_graph)
-        percent_complete = (len(fin['REQ'].unique()) + .0) / len(self.matcher.major_map.cleaned_major_data['REQID'].unique())
+        percent_complete = (len(fin['REQ'].unique()) + .0) / len(self.matcher.major_map.cleaned_major_data['REQID'].dropna().unique())
         # print '\n', percent_complete * 100 , "% complete"
         return fin, percent_complete
 

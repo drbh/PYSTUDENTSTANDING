@@ -43,33 +43,31 @@ app = web.application(urls, globals())
 class hello:
     def GET(self, name):
 
+        if name[0:4] == "args":
+            arguments = name[5:].split("-")
+            EM = arguments[0]
+            AP = arguments[1]
+            SY = arguments[2]
 
- 	# EM = '1203975040'
- 	# AP = 'BAMKTBS'
- 	# SY = '2011'
+            print EM,AP,SY
 
-	if name[0:4] == "args":
-		arguments = name[5:].split("-")
-		EM = arguments[0]
-		AP = arguments[1]
-		SY = arguments[2]
+            opti_result = do_all(int(EM),str(AP),int(SY))
 
-		print EM,AP,SY
-		result = do_all(int(EM),str(AP),int(SY))
+            print opti_result[0][1]
 
-        mtch = result[0][0].to_dict()
-        mssreq = result[2].to_dict()
-        missed_classes = result[1].to_dict()
+            match = dict({'Optimized Matches' : opti_result[0][0].to_dict() })
+            mssreq = dict({'Missed Requirements':  opti_result[2].to_dict() })
+            missed_classes = dict({'Missed Classes': opti_result[1].to_dict() })
+            percent = dict({'Percentage Complete' : opti_result[0][1] })
 
-        merged_dict = {key: value for (key, value) in (mtch.items() + mssreq.items())}
+            merged_dict = {key: value for (key, value) in (match.items() + mssreq.items())}
+            merged_dict =  {key: value for (key, value) in (merged_dict.items() + missed_classes.items())}
+            merged_dict = {key: value for (key, value) in (merged_dict.items() + percent.items())}
+            # string dump of the merged dict
 
-        merged_dict =  {key: value for (key, value) in (merged_dict.items() + missed_classes.items())}
-        # string dump of the merged dict
-        matches = json.dumps(merged_dict)
+            matches = json.dumps(merged_dict, sort_keys=True, indent=4, default=json_util.default) #json.dumps(merged_dict)
 
-
-        # missed_requirements = json.dumps(result[2].to_dict())
-        return matches
+            return matches
 
 
 if __name__ == "__main__":

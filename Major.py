@@ -47,7 +47,7 @@ class Major(object):
         # check if the row has text in track group
         is_track = mapd.apply(lambda row: len(str(row['TRACK_GROUP'])) > 10, axis=1)
         # id is track make reqid 0
-        REQID[is_track] = 0
+        REQID[is_track] = 9999
 
         # add columns to frame
         mapd = mapd.assign( FULL = FULL )
