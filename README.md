@@ -1,6 +1,32 @@
 # ANALYTIC DEGREE AUDITING Verison 0.0.1
 ## G.P.A (GRADUATION PROGRESS ASSESMENT)
 
+
+### How to interactive
+
+
+Arguments  
+1. EMPLID  
+2. MAJOR  
+3. MAJOR START YEAR  
+
+`https://web-destination.com:PORT/[EMPLID]-[MAJOR]-[MAJOR-YEAR]`  
+
+The endpoint takes three arguments that are dash seperated
+
+**example requests**
+
+http://localhost:8080/args/1203975040-BAMKTBS-2011  
+http://localhost:8080/args/1201890954-HIMUSMCBA-2015  - NO MAJOR DATA
+http://localhost:8080/args/1000737024-LABSCBS-2015  - ERROR  
+http://localhost:8080/args/1209282486-SUSUSTBS-2015  
+http://localhost:8080/args/1001455667-ESCPIBS-2015   - ERROR  
+http://localhost:8080/args/1000093386-ESCONMGTBS-2015  
+http://localhost:8080/args/1208541408-LSAQSBS-2015  - NO MAJOR DATA  
+http://localhost:8080/args/1206539733-FIFISBS-2015   - NO MAJOR DATA  
+
+If theres an internal server error is likely becasue the major map data is not stored in the static files that these are pulling from
+
 ## Data dependencies
 In order for this program to run one must have static CSV files of past student data. In v0.0.1 we are not connecting to any dyanmic datasouce.
 
